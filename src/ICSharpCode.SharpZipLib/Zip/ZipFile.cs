@@ -883,6 +883,10 @@ namespace ICSharpCode.SharpZipLib.Zip
 					result = new InflaterInputStream(result, new Inflater(true));
 					break;
 
+				case CompressionMethod.BZip2:
+					result = new BZip2.BZip2InputStream(result);
+					break;
+
 				default:
 					throw new ZipException("Unsupported compression method " + method);
 			}
@@ -1899,7 +1903,7 @@ namespace ICSharpCode.SharpZipLib.Zip
 		/// <param name="compressionMethod">The compression method for the new entry.</param>
 		private void CheckSupportedCompressionMethod(CompressionMethod compressionMethod)
 		{
-			if (compressionMethod != CompressionMethod.Deflated && compressionMethod != CompressionMethod.Stored)
+			if (compressionMethod != CompressionMethod.Deflated && compressionMethod != CompressionMethod.Stored && compressionMethod != CompressionMethod.BZip2)
 			{
 				throw new NotImplementedException("Compression method not supported");
 			}
@@ -2631,6 +2635,14 @@ namespace ICSharpCode.SharpZipLib.Zip
 						IsStreamOwner = false
 					};
 					result = dos;
+					break;
+
+				case CompressionMethod.BZip2:
+					var bzos = new BZip2.BZip2OutputStream(result)
+					{
+						IsStreamOwner = false
+					};
+					result = bzos;
 					break;
 
 				default:
