@@ -227,6 +227,15 @@ namespace ICSharpCode.SharpZipLib.Zip
 		}
 
 		/// <summary>
+		/// Get / set the method of encrypting entries.
+		/// </summary>
+		/// <remarks>
+		/// Only applies when <see cref="Password"/> is set.
+		/// Defaults to ZipCrypto for backwards compatibility purposes.
+		/// </remarks>
+		public ZipEncryptionMethod EntryEncryptionMethod { get; set; } = ZipEncryptionMethod.ZipCrypto;
+
+		/// <summary>
 		/// Get or set the <see cref="INameTransform"></see> active when creating Zip files.
 		/// </summary>
 		/// <seealso cref="EntryFactory"></seealso>
@@ -533,12 +542,16 @@ namespace ICSharpCode.SharpZipLib.Zip
 			{
 				try
 				{
-					// The open below is equivalent to OpenRead which gaurantees that if opened the
+					// The open below is equivalent to OpenRead which guarantees that if opened the
 					// file will not be changed by subsequent openers, but precludes opening in some cases
 					// were it could succeed. ie the open may fail as its already open for writing and the share mode should reflect that.
 					using (FileStream stream = File.Open(e.Name, FileMode.Open, FileAccess.Read, FileShare.Read))
 					{
 						ZipEntry entry = entryFactory_.MakeFileEntry(e.Name);
+
+						// Set up AES encryption for the entry if required.
+						ConfigureEntryEncryption(entry);
+
 						outputStream_.PutNextEntry(entry);
 						AddFileContents(e.Name, stream);
 					}
@@ -554,6 +567,28 @@ namespace ICSharpCode.SharpZipLib.Zip
 						continueRunning_ = false;
 						throw;
 					}
+				}
+			}
+		}
+
+		// Set up the encryption method to use for the specific entry.
+		private void ConfigureEntryEncryption(ZipEntry entry)
+		{
+			if (!string.IsNullOrEmpty(Password))
+			{
+				switch (EntryEncryptionMethod)
+				{
+					case ZipEncryptionMethod.ZipCrypto:
+						entry.AESKeySize = 0;
+						break;
+
+					case ZipEncryptionMethod.AES128:
+						entry.AESKeySize = 128;
+						break;
+
+					case ZipEncryptionMethod.AES256:
+						entry.AESKeySize = 256;
+						break;
 				}
 			}
 		}

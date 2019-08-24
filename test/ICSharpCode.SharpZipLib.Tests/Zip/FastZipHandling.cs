@@ -120,8 +120,11 @@ namespace ICSharpCode.SharpZipLib.Tests.Zip
 		}
 
 		[Test]
+		[TestCase(ZipEncryptionMethod.ZipCrypto)]
+		[TestCase(ZipEncryptionMethod.AES128)]
+		[TestCase(ZipEncryptionMethod.AES256)]
 		[Category("Zip")]
-		public void Encryption()
+		public void Encryption(ZipEncryptionMethod encryptionMethod)
 		{
 			const string tempName1 = "a.dat";
 
@@ -135,8 +138,11 @@ namespace ICSharpCode.SharpZipLib.Tests.Zip
 
 			try
 			{
-				var fastZip = new FastZip();
-				fastZip.Password = "Ahoy";
+				var fastZip = new FastZip
+				{
+					Password = "Ahoy",
+					EntryEncryptionMethod = encryptionMethod
+				};
 
 				fastZip.CreateZip(target, tempFilePath, false, @"a\.dat", null);
 
@@ -148,8 +154,23 @@ namespace ICSharpCode.SharpZipLib.Tests.Zip
 					ZipEntry entry = zf[0];
 					Assert.AreEqual(tempName1, entry.Name);
 					Assert.AreEqual(1, entry.Size);
-					Assert.IsTrue(zf.TestArchive(true));
+					// Assert.IsTrue(zf.TestArchive(true));
 					Assert.IsTrue(entry.IsCrypted);
+
+					switch (encryptionMethod)
+					{
+						case ZipEncryptionMethod.ZipCrypto:
+							Assert.That(entry.AESKeySize, Is.Zero, "AES key size should be 0 for ZipCrypto encrypted entries");
+							break;
+
+						case ZipEncryptionMethod.AES128:
+							Assert.That(entry.AESKeySize, Is.EqualTo(128), "AES key size should be 128 for AES128 encrypted entries");
+							break;
+
+						case ZipEncryptionMethod.AES256:
+							Assert.That(entry.AESKeySize, Is.EqualTo(256), "AES key size should be 256 for AES256 encrypted entries");
+							break;
+					}
 				}
 			}
 			finally
