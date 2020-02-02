@@ -367,7 +367,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 				}
 			}
 
-			byte[] name = ZipStrings.ConvertToArray(entry.Flags, entry.Name);
+			var transformedName = nameTransform.TransformFile(entry.Name);
+			byte[] name = ZipStrings.ConvertToArray(entry.Flags, transformedName);
 
 			if (name.Length > 0xFFFF)
 			{
@@ -787,7 +788,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 					WriteLeInt((int)entry.Size);
 				}
 
-				byte[] name = ZipStrings.ConvertToArray(entry.Flags, entry.Name);
+				var transformedName = nameTransform.TransformFile(entry.Name);
+				byte[] name = ZipStrings.ConvertToArray(entry.Flags, transformedName);
 
 				if (name.Length > 0xffff)
 				{
@@ -969,6 +971,11 @@ namespace ICSharpCode.SharpZipLib.Zip
 		// However it does avoid the situation were a large file is added and cannot be completed correctly.
 		// NOTE: Setting the size for entries before they are added is the best solution!
 		private UseZip64 useZip64_ = UseZip64.Dynamic;
+
+		/// <summary>
+		/// Used to clean up the names of entries before adding to the output stream.
+		/// </summary>
+		private ZipNameTransform nameTransform = new ZipNameTransform();
 
 		#endregion Instance Fields
 	}
